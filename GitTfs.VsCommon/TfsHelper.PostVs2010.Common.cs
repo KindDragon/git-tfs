@@ -88,7 +88,7 @@ namespace Sep.Git.Tfs.VsCommon
                 Trace.WriteLine("Found parent branch : " + tfsPathParentBranch);
 
                 var firstChangesetInBranchToCreate = VersionControl.QueryHistory(tfsPathBranchToCreate, VersionSpec.Latest, 0, RecursionType.Full,
-                    null, null, null, int.MaxValue, true, false, false).Cast<Changeset>().LastOrDefault();
+                    null, null, null, 1, false, false, false, true).Cast<Changeset>().FirstOrDefault();
 
                 if (firstChangesetInBranchToCreate == null)
                 {
