@@ -87,15 +87,15 @@ namespace Sep.Git.Tfs.VsCommon
                 tfsPathParentBranch = tfsBranchToCreate.Properties.ParentBranch.Item;
                 Trace.WriteLine("Found parent branch : " + tfsPathParentBranch);
 
-                var firstChangesetInBranchToCreate = VersionControl.QueryHistory(tfsPathBranchToCreate, VersionSpec.Latest, 0, RecursionType.Full,
-                    null, null, null, 1, false, false, false, true).Cast<Changeset>().FirstOrDefault();
-
-                if (firstChangesetInBranchToCreate == null)
-                {
-                    throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to find first changeset for " + tfsPathBranchToCreate);
-                }
                 try
                 {
+                    var firstChangesetInBranchToCreate = VersionControl.QueryHistory(tfsPathBranchToCreate, VersionSpec.Latest, 0, RecursionType.Full,
+                        null, null, null, 1, false, false, false, true).Cast<Changeset>().FirstOrDefault();
+
+                    if (firstChangesetInBranchToCreate == null)
+                    {
+                        throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to find first changeset for " + tfsPathBranchToCreate);
+                    }
                     var mergedItemsToFirstChangesetInBranchToCreate = GetMergeInfo(tfsPathBranchToCreate, tfsPathParentBranch, firstChangesetInBranchToCreate.ChangesetId);
 
                     string renameFromBranch;
@@ -108,9 +108,9 @@ namespace Sep.Git.Tfs.VsCommon
                     if (renameFromBranch != null)
                         GetRootChangesetForBranch(rootBranches, renameFromBranch);
                 }
-                catch(VersionControlException)
+                catch (VersionControlException)
                 {
-                    throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to get merge changesets for " + tfsPathBranchToCreate);
+                    throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to query history for " + tfsPathBranchToCreate);
                 }
             }
             catch (FeatureNotSupportedException ex)

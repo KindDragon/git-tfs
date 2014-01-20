@@ -156,6 +156,7 @@ namespace Sep.Git.Tfs.Commands
             public string Sha1RootCommit { get; set; }
         }
 
+        [DebuggerDisplay("{TfsRepositoryPath} C{RootChangesetId}")]
         class BranchDatas
         {
             public string TfsRepositoryPath { get; set; }
