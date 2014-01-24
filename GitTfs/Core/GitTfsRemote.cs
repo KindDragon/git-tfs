@@ -359,100 +359,100 @@ namespace Sep.Git.Tfs.Core
             }
             else if (Repository.GetConfig(GitTfsConstants.IgnoreBranches) != true.ToString())
                 {
-                    var parentChangesetId = Tfs.FindMergeChangesetParent(TfsRepositoryPath, changeset.Summary.ChangesetId, this);
-                    var shaParent = Repository.FindCommitHashByChangesetId(parentChangesetId);
-                    if (shaParent == null)
-                        shaParent = FindMergedRemoteAndFetch(parentChangesetId, stopOnFailMergeCommit);
-                    if (shaParent != null)
-                    {
-                        log.CommitParents.Add(shaParent);
-                    }
-                    else
-                    {
-                        if (stopOnFailMergeCommit)
-                        return false;
+            var parentChangesetId = Tfs.FindMergeChangesetParent(TfsRepositoryPath, changeset.Summary.ChangesetId, this);
+            var shaParent = Repository.FindCommitHashByChangesetId(parentChangesetId);
+            if (shaParent == null)
+                shaParent = FindMergedRemoteAndFetch(parentChangesetId, stopOnFailMergeCommit);
+            if (shaParent != null)
+            {
+                log.CommitParents.Add(shaParent);
+            }
+            else
+            {
+                if (stopOnFailMergeCommit)
+                    return false;
 
                         stdout.WriteLine("warning: this changeset " + changeset.Summary.ChangesetId +
                                      " is a merge changeset. But git-tfs failed to find and fetch the parent changeset "
                                      + parentChangesetId + ". Parent changeset will be ignored...");
                     }
-            }
+                }
             else
             {
                 stdout.WriteLine("info: this changeset " + changeset.Summary.ChangesetId +
                                  " is a merge changeset. But was not treated as is because of your git setting...");
             }
             return true;
-                }
+        }
 
         private void ProcessChangeset(ITfsChangeset changeset, LogEntry log)
         {
 
-                if (ExportMetadatas)
+            if (ExportMetadatas)
+            {
+                if (changeset.Summary.Workitems.Any())
                 {
-                    if (changeset.Summary.Workitems.Any())
-                    {
-                        log.Log += "\nwork-items: " + string.Join(", ", changeset.Summary.Workitems.Select(wi => "#" + wi.Id)); ;
-                    }
-
-                    if (ExportWorkitemsMapping.Count != 0)
-                    {
-                        foreach (var mapping in ExportWorkitemsMapping)
-                        {
-                            log.Log = log.Log.Replace("#" + mapping.Key, "#" + mapping.Value);
-                        }
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(changeset.Summary.PolicyOverrideComment))
-                        log.Log += "\n" + GitTfsConstants.GitTfsPolicyOverrideCommentPrefix + changeset.Summary.PolicyOverrideComment;
-
-                    if (!string.IsNullOrWhiteSpace(changeset.Summary.CodeReviewer))
-                        log.Log += "\n" + GitTfsConstants.GitTfsCodeReviewerPrefix + changeset.Summary.CodeReviewer;
-
-                    if (!string.IsNullOrWhiteSpace(changeset.Summary.SecurityReviewer))
-                        log.Log += "\n" + GitTfsConstants.GitTfsSecurityReviewerPrefix + changeset.Summary.SecurityReviewer;
-
-                    if (!string.IsNullOrWhiteSpace(changeset.Summary.PerformanceReviewer))
-                        log.Log += "\n" + GitTfsConstants.GitTfsPerformanceReviewerPrefix + changeset.Summary.PerformanceReviewer;
+                    log.Log += "\nwork-items: " + string.Join(", ", changeset.Summary.Workitems.Select(wi => "#" + wi.Id)); ;
                 }
 
-                var commitSha = Commit(log);
-                UpdateTfsHead(commitSha, changeset.Summary.ChangesetId);
-                StringBuilder metadatas = new StringBuilder();
-            if (changeset.Summary.Workitems.Any())
+                if (ExportWorkitemsMapping.Count != 0)
                 {
-                    string workitemNote = "Workitems:\n";
-                foreach (var workitem in changeset.Summary.Workitems)
+                    foreach (var mapping in ExportWorkitemsMapping)
                     {
-                        var workitemId = workitem.Id.ToString();
-                        var workitemUrl = workitem.Url;
-                        if (ExportMetadatas && ExportWorkitemsMapping.Count != 0)
-                        {
-                            if (ExportWorkitemsMapping.ContainsKey(workitemId))
-                            {
-                                var oldWorkitemId = workitemId;
-                                workitemId = ExportWorkitemsMapping[workitemId];
-                                workitemUrl = workitemUrl.Replace(oldWorkitemId, workitemId);
-                            }
-                        }
-                        workitemNote += String.Format("[{0}] {1}\n    {2}\n", workitemId, workitem.Title, workitemUrl);
+                        log.Log = log.Log.Replace("#" + mapping.Key, "#" + mapping.Value);
                     }
-                    metadatas.Append(workitemNote);
                 }
 
                 if (!string.IsNullOrWhiteSpace(changeset.Summary.PolicyOverrideComment))
-                    metadatas.Append("\nPolicy Override Comment:" + changeset.Summary.PolicyOverrideComment);
+                    log.Log += "\n" + GitTfsConstants.GitTfsPolicyOverrideCommentPrefix + changeset.Summary.PolicyOverrideComment;
 
                 if (!string.IsNullOrWhiteSpace(changeset.Summary.CodeReviewer))
-                    metadatas.Append("\nCode Reviewer:" + changeset.Summary.CodeReviewer);
+                    log.Log += "\n" + GitTfsConstants.GitTfsCodeReviewerPrefix + changeset.Summary.CodeReviewer;
 
                 if (!string.IsNullOrWhiteSpace(changeset.Summary.SecurityReviewer))
-                    metadatas.Append("\nSecurity Reviewer:" + changeset.Summary.SecurityReviewer);
+                    log.Log += "\n" + GitTfsConstants.GitTfsSecurityReviewerPrefix + changeset.Summary.SecurityReviewer;
 
                 if (!string.IsNullOrWhiteSpace(changeset.Summary.PerformanceReviewer))
-                    metadatas.Append("\nPerformance Reviewer:" + changeset.Summary.PerformanceReviewer);
-                if (metadatas.Length != 0)
-                    Repository.CreateNote(commitSha, metadatas.ToString(), log.AuthorName, log.AuthorEmail, log.Date);
+                    log.Log += "\n" + GitTfsConstants.GitTfsPerformanceReviewerPrefix + changeset.Summary.PerformanceReviewer;
+            }
+
+            var commitSha = Commit(log);
+            UpdateTfsHead(commitSha, changeset.Summary.ChangesetId);
+            StringBuilder metadatas = new StringBuilder();
+            if (changeset.Summary.Workitems.Any())
+            {
+                string workitemNote = "Workitems:\n";
+                foreach (var workitem in changeset.Summary.Workitems)
+                {
+                    var workitemId = workitem.Id.ToString();
+                    var workitemUrl = workitem.Url;
+                    if (ExportMetadatas && ExportWorkitemsMapping.Count != 0)
+                    {
+                        if (ExportWorkitemsMapping.ContainsKey(workitemId))
+                        {
+                            var oldWorkitemId = workitemId;
+                            workitemId = ExportWorkitemsMapping[workitemId];
+                            workitemUrl = workitemUrl.Replace(oldWorkitemId, workitemId);
+                        }
+                    }
+                    workitemNote += String.Format("[{0}] {1}\n    {2}\n", workitemId, workitem.Title, workitemUrl);
+                }
+                metadatas.Append(workitemNote);
+            }
+
+            if (!string.IsNullOrWhiteSpace(changeset.Summary.PolicyOverrideComment))
+                metadatas.Append("\nPolicy Override Comment:" + changeset.Summary.PolicyOverrideComment);
+
+            if (!string.IsNullOrWhiteSpace(changeset.Summary.CodeReviewer))
+                metadatas.Append("\nCode Reviewer:" + changeset.Summary.CodeReviewer);
+
+            if (!string.IsNullOrWhiteSpace(changeset.Summary.SecurityReviewer))
+                metadatas.Append("\nSecurity Reviewer:" + changeset.Summary.SecurityReviewer);
+
+            if (!string.IsNullOrWhiteSpace(changeset.Summary.PerformanceReviewer))
+                metadatas.Append("\nPerformance Reviewer:" + changeset.Summary.PerformanceReviewer);
+            if (metadatas.Length != 0)
+                Repository.CreateNote(commitSha, metadatas.ToString(), log.AuthorName, log.AuthorEmail, log.Date);
         }
 
         private string FindMergedRemoteAndFetch(int parentChangesetId, bool stopOnFailMergeCommit)
