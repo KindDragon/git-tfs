@@ -102,6 +102,15 @@ namespace Sep.Git.Tfs.Commands
 
                 retVal = initBranch.Run();
             }
+            try
+            {
+                globals.Repository.CommandNoisy("gc");
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(e);
+                stdout.WriteLine("Warning: `git gc` failed!");
+            }
             if (!init.IsBare) globals.Repository.CommandNoisy("merge", globals.Repository.ReadTfsRemote(globals.RemoteId).RemoteRef);
             return retVal;
         }
