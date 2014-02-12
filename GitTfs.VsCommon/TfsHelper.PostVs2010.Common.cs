@@ -94,17 +94,24 @@ namespace Sep.Git.Tfs.VsCommon
                 {
                     throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to find first changeset for " + tfsPathBranchToCreate);
                 }
+                try
+                {
+                    var mergedItemsToFirstChangesetInBranchToCreate = GetMergeInfo(tfsPathBranchToCreate, tfsPathParentBranch, firstChangesetInBranchToCreate.ChangesetId);
 
-                var mergedItemsToFirstChangesetInBranchToCreate = GetMergeInfo(tfsPathBranchToCreate, tfsPathParentBranch, firstChangesetInBranchToCreate.ChangesetId);
+                    string renameFromBranch;
+                    var rootChangesetInParentBranch =
+                        GetRelevantChangesetBasedOnChangeType(mergedItemsToFirstChangesetInBranchToCreate, tfsPathParentBranch, tfsPathBranchToCreate, out renameFromBranch);
 
-                string renameFromBranch;
-                var rootChangesetInParentBranch =
-                    GetRelevantChangesetBasedOnChangeType(mergedItemsToFirstChangesetInBranchToCreate, tfsPathParentBranch, tfsPathBranchToCreate, out renameFromBranch);
 
-                AddNewRootBranch(rootBranches, new RootBranch(rootChangesetInParentBranch, tfsPathBranchToCreate));
-                Trace.WriteLineIf(renameFromBranch != null, "Found original branch '" + renameFromBranch + "' (renamed in branch '" + tfsPathBranchToCreate + "')");
-                if (renameFromBranch != null)
-                    GetRootChangesetForBranch(rootBranches, renameFromBranch);
+                    AddNewRootBranch(rootBranches, new RootBranch(rootChangesetInParentBranch, tfsPathBranchToCreate));
+                    Trace.WriteLineIf(renameFromBranch != null, "Found original branch '" + renameFromBranch + "' (renamed in branch '" + tfsPathBranchToCreate + "')");
+                    if (renameFromBranch != null)
+                        GetRootChangesetForBranch(rootBranches, renameFromBranch);
+                }
+                catch(VersionControlException)
+                {
+                    throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to get merge changesets for " + tfsPathBranchToCreate);
+                }
             }
             catch (FeatureNotSupportedException ex)
             {
