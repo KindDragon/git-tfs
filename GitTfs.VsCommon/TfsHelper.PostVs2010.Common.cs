@@ -72,19 +72,19 @@ namespace Sep.Git.Tfs.VsCommon
                     Trace.WriteLine("Parameter about parent branch will be ignored because this version of TFS is able to find the parent!");
 
                 Trace.WriteLine("Looking to find branch '" + tfsPathBranchToCreate + "' in all TFS branches...");
-                var tfsBranchToCreate = AllTfsBranches.FirstOrDefault(b => b.Properties.RootItem.Item.ToLower() == tfsPathBranchToCreate.ToLower());
-                if (tfsBranchToCreate == null)
+                string tfsParentBranch;
+                if (!AllTfsBranches.TryGetValue(tfsPathBranchToCreate, out tfsParentBranch))
                 {
                     throw new GitTfsException("error: TFS branches " + tfsPathBranchToCreate + " not found!");
                 }
 
-                if (tfsBranchToCreate.Properties.ParentBranch == null)
+                if (tfsParentBranch == null)
                 {
                     throw new GitTfsException("error : the branch you try to init '" + tfsPathBranchToCreate + "' is a root branch (e.g. has no parents).",
                         new List<string> { "Clone this branch from Tfs instead of trying to init it!\n   Command: git tfs clone " + Url + " " + tfsPathBranchToCreate });
                 }
                 
-                tfsPathParentBranch = tfsBranchToCreate.Properties.ParentBranch.Item;
+                tfsPathParentBranch = tfsParentBranch;
                 Trace.WriteLine("Found parent branch : " + tfsPathParentBranch);
 
                 try
@@ -139,6 +139,29 @@ namespace Sep.Git.Tfs.VsCommon
             }
         }
 
+        private static void AddNewRootBranch(IList<RootBranch> rootBranches, RootBranch rootBranch)
+        {
+            if (rootBranches.Any())
+                rootBranch.IsRenamedBranch = true;
+            rootBranches.Insert(0, rootBranch);
+        }
+
+        private IDictionary<string, string> _allTfsBranches;
+        private IDictionary<string, string> AllTfsBranches
+        {
+            get
+            {
+                if (_allTfsBranches != null)
+                    return _allTfsBranches;
+                Trace.WriteLine("Looking for all branches...");
+                _allTfsBranches = VersionControl.QueryRootBranchObjects(RecursionType.Full)
+                    .ToDictionary(b => b.Properties.RootItem.Item,
+                        b => b.Properties.ParentBranch != null ? b.Properties.ParentBranch.Item : null,
+                        (StringComparer.InvariantCultureIgnoreCase));
+                return _allTfsBranches;
+            }
+        }
+
         private IEnumerable<MergeInfo> GetMergeInfo(string tfsPathBranchToCreate, string tfsPathParentBranch,
             int firstChangesetInBranchToCreate)
         {
@@ -172,19 +195,6 @@ namespace Sep.Git.Tfs.VsCommon
                 Trace.WriteLine(lastMerge, "Merge");
             }
             return mergedItemsToFirstChangesetInBranchToCreate;
-        }
-
-        private BranchObject[] _allTfsBranches;
-        protected BranchObject[] AllTfsBranches
-        {
-            get { return _allTfsBranches ?? (_allTfsBranches = VersionControl.QueryRootBranchObjects(RecursionType.Full)); }
-        }
-
-        private static void AddNewRootBranch(IList<RootBranch> rootBranches, RootBranch rootBranch)
-        {
-            if (rootBranches.Any())
-                rootBranch.IsRenamedBranch = true;
-            rootBranches.Insert(0, rootBranch);
         }
 
         /// <summary>
