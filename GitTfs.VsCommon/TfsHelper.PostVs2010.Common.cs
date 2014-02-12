@@ -72,10 +72,10 @@ namespace Sep.Git.Tfs.VsCommon
                     Trace.WriteLine("Parameter about parent branch will be ignored because this version of TFS is able to find the parent!");
 
                 Trace.WriteLine("Looking to find branch '" + tfsPathBranchToCreate + "' in all TFS branches...");
-                var tfsBranchToCreate = AllTfsBranches.FirstOrDefault(b => b.Properties.RootItem.Item == tfsPathBranchToCreate);
+                var tfsBranchToCreate = AllTfsBranches.FirstOrDefault(b => b.Properties.RootItem.Item.ToLower() == tfsPathBranchToCreate.ToLower());
                 if (tfsBranchToCreate == null)
                 {
-                    throw new GitTfsException("error: TFS branches "+ tfsPathBranchToCreate +" not found!");
+                    throw new GitTfsException("error: TFS branches " + tfsPathBranchToCreate + " not found!");
                 }
 
                 if (tfsBranchToCreate.Properties.ParentBranch == null)
@@ -119,8 +119,8 @@ namespace Sep.Git.Tfs.VsCommon
                 foreach (var rootBranch in base.GetRootChangesetForBranch(tfsPathBranchToCreate, tfsPathParentBranch))
                 {
                     AddNewRootBranch(rootBranches, rootBranch);
-                }
             }
+        }
         }
 
         private class MergeInfo
