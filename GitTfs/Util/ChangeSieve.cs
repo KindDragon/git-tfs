@@ -68,7 +68,7 @@ namespace Sep.Git.Tfs.Util
         public IEnumerable<IChange> GetChangesToFetch()
         {
             if (RenameBranchCommmit)
-                return new List<IChange>();
+                return Enumerable.Empty<IChange>();
 
             return NamedChanges.Where(c => IncludeInFetch(c)).Select(c => c.Change);
         }
@@ -76,7 +76,7 @@ namespace Sep.Git.Tfs.Util
         public IEnumerable<ApplicableChange> GetChangesToApply()
         {
             if (RenameBranchCommmit)
-                return new List<ApplicableChange>();
+                return Enumerable.Empty<ApplicableChange>();
 
             var compartments = new {
                 Deleted = new List<ApplicableChange>(),
@@ -112,6 +112,23 @@ namespace Sep.Git.Tfs.Util
                 }
             }
             return compartments.Deleted.Concat(compartments.Updated);
+        }
+
+        bool? _deletesProject;
+        private bool DeletesProject
+        {
+            get
+            {
+                if (!_deletesProject.HasValue)
+                {
+                    _deletesProject =
+                        NamedChanges.Any(change =>
+                            change.Change.Item.ItemType == TfsItemType.Folder
+                               && change.GitPath == string.Empty
+                               && change.Change.ChangeType.IncludesOneOf(TfsChangeType.Delete));
+                }
+                return _deletesProject.Value;
+            }
         }
 
         class NamedChange
