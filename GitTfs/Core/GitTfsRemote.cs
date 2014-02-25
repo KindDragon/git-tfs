@@ -456,7 +456,7 @@ namespace Sep.Git.Tfs.Core
 
         private string FindMergedRemoteAndFetch(int parentChangesetId, bool stopOnFailMergeCommit)
         {
-            var tfsRemotes = FindTfsRemoteOfChangeset(Tfs.GetChangeset(parentChangesetId));
+            var tfsRemotes = FindTfsRemoteOfChangeset(Tfs.GetChangeset(parentChangesetId), stopOnFailMergeCommit);
             foreach (var tfsRemote in tfsRemotes.Where(r=>string.Compare(r.TfsRepositoryPath, this.TfsRepositoryPath, StringComparison.InvariantCultureIgnoreCase) != 0))
             {
                 stdout.WriteLine("\tFetching from dependent TFS remote '{0}'...", tfsRemote.Id);
@@ -465,7 +465,7 @@ namespace Sep.Git.Tfs.Core
             return Repository.FindCommitHashByChangesetId(parentChangesetId);
         }
 
-        private IEnumerable<IGitTfsRemote> FindTfsRemoteOfChangeset(IChangeset parentChangeset)
+        private IEnumerable<IGitTfsRemote> FindTfsRemoteOfChangeset(IChangeset parentChangeset, bool stopOnFailMergeCommit)
         {
             //I think you want something that uses GetPathInGitRepo and ShouldSkip. See TfsChangeset.Apply.
             //Don't know if there is a way to extract remote tfs repository path from changeset datas! Should be better!!!
@@ -496,8 +496,12 @@ namespace Sep.Git.Tfs.Core
             var sha1RootCommit = Repository.FindCommitHashByChangesetId(rootChangesetId);
             if (string.IsNullOrWhiteSpace(sha1RootCommit))
             {
-                stdout.WriteLine("error: root commit not found corresponding to changeset " + rootChangesetId);
-                return new List<IGitTfsRemote>();
+                sha1RootCommit = FindMergedRemoteAndFetch(rootChangesetId, stopOnFailMergeCommit);
+                if (string.IsNullOrWhiteSpace(sha1RootCommit))
+                {
+                    stdout.WriteLine("error: root commit not found corresponding to changeset " + rootChangesetId);
+                    return new List<IGitTfsRemote>();
+                }
             }
 
             remote = InitBranch(this.remoteOptions, tfsBranch.Path, sha1RootCommit);
