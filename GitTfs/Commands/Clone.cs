@@ -58,10 +58,18 @@ namespace Sep.Git.Tfs.Commands
             tfsRepositoryPath = (tfsRepositoryPath ?? string.Empty).TrimEnd('/');
 
 
-            int retVal;
+            int retVal = 0;
             try
             {
-                retVal = init.Run(tfsUrl, tfsRepositoryPath, gitRepositoryPath);
+                if (repositoryDirCreated)
+                {
+                    retVal = init.Run(tfsUrl, tfsRepositoryPath, gitRepositoryPath);
+                }
+                else
+                {
+                    Environment.CurrentDirectory = gitRepositoryPath;
+                    globals.Repository = init.GitHelper.MakeRepository(globals.GitDir);
+                }
 
                 VerifyTfsPathToClone(tfsRepositoryPath);
 
@@ -178,8 +186,15 @@ namespace Sep.Git.Tfs.Commands
             var di = new DirectoryInfo(gitRepositoryPath);
             if (di.Exists)
             {
-                if (di.EnumerateFileSystemInfos().Any())
-                    throw new GitTfsException("error: Specified git repository directory is not empty");
+                bool isDebuggerAttached = false;
+#if DEBUG
+                isDebuggerAttached = Debugger.IsAttached;
+#endif
+                if (!isDebuggerAttached)
+                {
+                    if (di.EnumerateFileSystemInfos().Any())
+                        throw new GitTfsException("error: Specified git repository directory is not empty");
+                }
             }
             else
             {
