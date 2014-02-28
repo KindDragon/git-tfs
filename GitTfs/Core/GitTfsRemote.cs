@@ -487,10 +487,10 @@ namespace Sep.Git.Tfs.Core
             if (tfsBranch.IsRoot)
             {
                 remote = InitTfsBranch(this.remoteOptions, tfsBranch.Path);
-                return new List<IGitTfsRemote>() {remote};
-        }
+                return new List<IGitTfsRemote>() { remote };
+            }
 
-            var branchesDatas = Tfs.GetRootChangesetForBranch(tfsBranch.Path);
+            var branchesDatas = Tfs.GetRootChangesetForBranch(tfsBranch.Path, parentChangeset.ChangesetId);
 
             if(branchesDatas.Count > 1)
                 throw new NotImplementedException("TODO: Manage renamed branch by integrating IniTBranch.InitBranchSupportingRename() here");
