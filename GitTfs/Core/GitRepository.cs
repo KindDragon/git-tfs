@@ -337,9 +337,8 @@ namespace Sep.Git.Tfs.Core
             return new Dictionary<string, GitObject>(StringComparer.InvariantCultureIgnoreCase);
         }
 
-        public IDictionary<string, GitObject> GetObjects(string commit, IDictionary<string, GitObject> initialTree)
+        public IDictionary<string, GitObject> GetObjects(string commit, IDictionary<string, GitObject> entries)
         {
-            var entries = GetObjects();
             if (commit != null)
             {
                 ParseEntries(entries, _repository.Lookup<Commit>(commit).Tree, commit);

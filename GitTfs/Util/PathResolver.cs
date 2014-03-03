@@ -39,7 +39,7 @@ namespace Sep.Git.Tfs.Util
         private GitObject Lookup(string pathInGitRepo)
         {
             GitObject result = null;
-            if (String.IsNullOrEmpty(pathInGitRepo) || _initialTree.TryGetValue(pathInGitRepo, out result))
+            if (_initialTree.TryGetValue(pathInGitRepo, out result))
                 return result;
 
             var fullPath = pathInGitRepo;
