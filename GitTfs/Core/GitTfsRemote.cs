@@ -323,20 +323,23 @@ namespace Sep.Git.Tfs.Core
             foreach (var changeset in fetchedChangesets)
             {
                 count++;
-                var log = Apply(MaxCommitHash, changeset, objects);
                 if (lastChangesetIdToFetch > 0 && changeset.Summary.ChangesetId > lastChangesetIdToFetch)
                 {
                     fetchResult.NewChangesetCount = count;
                     fetchResult.LastFetchedChangesetId = MaxChangesetId;
                     return fetchResult;
                 }
-                if (changeset.IsMergeChangeset && !ProcessMergeChangeset(changeset, stopOnFailMergeCommit, log))
+                string parentCommitSha = null;
+                if (changeset.IsMergeChangeset && !ProcessMergeChangeset(changeset, stopOnFailMergeCommit, ref parentCommitSha))
                 {
                     fetchResult.IsSuccess = false;
                     fetchResult.NewChangesetCount = count;
                     fetchResult.LastFetchedChangesetId = MaxChangesetId;
                     return fetchResult;
                 }
+                var log = Apply(MaxCommitHash, changeset, objects);
+                if (parentCommitSha != null)
+                    log.CommitParents.Add(parentCommitSha);
                 if (changeset.Summary.ChangesetId == mergeChangesetId)
                 {
                     foreach (var parent in parentCommitsHashes)
@@ -351,7 +354,7 @@ namespace Sep.Git.Tfs.Core
             return fetchResult;
         }
 
-        private bool ProcessMergeChangeset(ITfsChangeset changeset, bool stopOnFailMergeCommit, LogEntry log)
+        private bool ProcessMergeChangeset(ITfsChangeset changeset, bool stopOnFailMergeCommit, ref string parentCommit)
         {
             if (!Tfs.CanGetBranchInformation)
             {
@@ -366,7 +369,7 @@ namespace Sep.Git.Tfs.Core
                 shaParent = FindMergedRemoteAndFetch(parentChangesetId, stopOnFailMergeCommit);
             if (shaParent != null)
             {
-                log.CommitParents.Add(shaParent);
+                parentCommit = shaParent;
             }
             else
             {
