@@ -252,14 +252,25 @@ namespace Sep.Git.Tfs.VsCommon
 
             if (merge == null)
             {
-                merge = merges.FirstOrDefault(m => m.SourceChangeType.HasFlag(ChangeType.Rename)
-                    || m.SourceChangeType.HasFlag(ChangeType.SourceRename));
+                merge = merges.FirstOrDefault(m => m.SourceItem.Equals(tfsPathBranchToCreate, StringComparison.InvariantCultureIgnoreCase)
+                    && (m.TargetChangeType.HasFlag(ChangeType.Rename) || m.TargetChangeType.HasFlag(ChangeType.SourceRename)));
+                if (merge == null)
+                {
+                    merge = merges.FirstOrDefault(m => m.SourceChangeType.HasFlag(ChangeType.Rename)
+                        || m.SourceChangeType.HasFlag(ChangeType.SourceRename));
+                }
                 if (merge == null)
                     throw new GitTfsException("An unexpected error occured when trying to find the root changeset.\nFailed to find root changeset for " + tfsPathBranchToCreate + " branch in " + tfsPathParentBranch + " branch");
             }
 
-            if (merge.SourceChangeType.HasFlag(ChangeType.Rename)
-                 || merge.SourceChangeType.HasFlag(ChangeType.SourceRename))
+            if (merge.SourceItem.Equals(tfsPathBranchToCreate, StringComparison.InvariantCultureIgnoreCase)
+                && (merge.TargetChangeType.HasFlag(ChangeType.Rename)
+                || merge.TargetChangeType.HasFlag(ChangeType.SourceRename)))
+            {
+                renameFromBranch = merge.TargetItem;
+            }
+            else if (merge.SourceChangeType.HasFlag(ChangeType.Rename)
+                    || merge.SourceChangeType.HasFlag(ChangeType.SourceRename))
             {
                 if (!merge.TargetItem.Equals(tfsPathBranchToCreate, StringComparison.InvariantCultureIgnoreCase))
                     renameFromBranch = merge.TargetItem;
@@ -267,6 +278,11 @@ namespace Sep.Git.Tfs.VsCommon
                     merge.SourceChangeType = ChangeType.Merge;
             }
 
+            if (renameFromBranch != null)
+            {
+                Trace.WriteLine("Found C" + merge.TargetChangeset + " on branch " + merge.TargetItem);
+                return merge.TargetChangeset;
+            }
             if (merge.SourceChangeType.HasFlag(ChangeType.Branch)
                 || merge.SourceChangeType.HasFlag(ChangeType.Merge)
                 || merge.SourceChangeType.HasFlag(ChangeType.Add)
@@ -274,12 +290,6 @@ namespace Sep.Git.Tfs.VsCommon
             {
                 Trace.WriteLine("Found C" + merge.SourceChangeset + " on branch " + merge.SourceItem);
                 return merge.SourceChangeset;
-            }
-            if (merge.SourceChangeType.HasFlag(ChangeType.Rename)
-                || merge.SourceChangeType.HasFlag(ChangeType.SourceRename))
-            {
-                Trace.WriteLine("Found C" + merge.TargetChangeset + " on branch " + merge.TargetItem);
-                return merge.TargetChangeset;
             }
             throw new GitTfsException(
                 "Don't know (yet) how to find the root changeset for an ExtendedMerge of type " +
