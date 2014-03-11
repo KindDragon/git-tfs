@@ -117,6 +117,10 @@ namespace Sep.Git.Tfs.Commands
                         new List<string>() {"Remove ahead commits and retry", "use the --force option (ahead commits will be lost!)"});
             }
 
+            if (remote.MaxChangesetId == 0)
+                throw new GitTfsException("error : fetch is not allowed when branch is not initialized!",
+                    new List<string>() { "Use `branch --init` instead" });
+
             // It is possible that we have outdated refs/remotes/tfs/<id>.
             // E.g. someone already fetched changesets from TFS into another git repository and we've pulled it since
             // in that case tfs fetch will retrieve same changes again unnecessarily. To prevent it we will scan tree from HEAD and see if newer changesets from
